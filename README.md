@@ -1,87 +1,62 @@
-# [lidar_odometry_ros_wrapper](https://github.com/93won/lidar_odometry_ros_wrapper) converter to [HDMapping](https://github.com/MapsHD/HDMapping)
+# lidar_odometry_ros_wrapper to HDMapping simplified instruction
 
-## Hint
+## Step 1 (prepare data)
+Download the dataset `reg-1.bag` by clicking [link](https://cloud.cylab.be/public.php/dav/files/7PgyjbM2CBcakN5/reg-1.bag) (it is part of [Bunker DVI Dataset](https://charleshamesse.github.io/bunker-dvi-dataset)) and convert with [tool](https://github.com/MapsHD/livox_bag_aggregate) to 'reg-1.bag-pc.bag'.
 
-Please change branch to [Bunker-DVI-Dataset-reg-1](https://github.com/MapsHD/benchmark-lidar_odometry_ros_wrapper-to-HDMapping/tree/Bunker-DVI-Dataset-reg-1) for quick experiment.  
-## Example Dataset: 
+File 'reg-1.bag-pc.bag' is an input for further calculations.
+It should be located in '~/hdmapping-benchmark/data'.
 
-Download the dataset from [Bunker DVI Dataset](https://charleshamesse.github.io/bunker-dvi-dataset/)  
-
-## Intended use 
-
-This small toolset allows to integrate SLAM solution provided by [lidar_odometry_ros_wrapper](https://github.com/93won/lidar_odometry_ros_wrapper) with [HDMapping](https://github.com/MapsHD/HDMapping).
-This repository contains ROS 2 workspace that :
-  - submodule to tested revision of lidar_odometry_ros_wrapper
-  - a converter that listens to topics advertised from odometry node and save data in format compatible with HDMapping.
-
-## Building
-
-Clone the repo
-```shell
-mkdir -p /test_ws/src
-cd /test_ws/src
-git clone https://github.com/marcinmatecki/lidar_odometry_ros_wrapper-to-HDMapping.git --recursive
-cd ..
-colcon build
-```
-
-## Usage - data SLAM:
-
-Prepare recorded bag with estimated odometry:
-
-In first terminal record bag:
-```shell
-ros2 bag record /odometry /feature_points
-```
-
-and start odometry:
-```shell 
-cd /test_ws/
-source ./install/setup.sh # adjust to used shell
-ros2 launch lidar_odometry_ros lidar_odometry.launch.py config_file:=<config_path> use_sim_time:=true pointcloud_topic:=<topic>
-ros2 bag play {path_to_bag}
-```
-
-## Usage - conversion:
+## Step 2 (prepare docker)
+Run following commands in terminal
 
 ```shell
-cd /test_ws/
-source ./install/setup.sh # adjust to used shell
-ros2 run lidar-odometry-ros-to-hdmapping listener <recorded_bag> <output_dir>
+mkdir -p ~/hdmapping-benchmark
+cd ~/hdmapping-benchmark
+git clone https://github.com/marcinmatecki/benchmark-lidar_odometry_ros_wrapper-to-HDMapping.git --recursive
+cd benchmark-lidar_odometry_ros_wrapper-to-HDMapping
+git checkout mma/docker
+docker build -t lidar_odometry_ros_wrapper_humble .
 ```
 
-## Convert(If it's a ROS1 .bag file):
+## Step 3 (Convert data)
+We now convert data from ROS1 to ROS2
 
 ```shell
-rosbags-convert --src {your_downloaded_bag} --dst {desired_destination_for_the_converted_bag}
+docker run -it -v ~/hdmapping-benchmark/data:/data --user 1000:1000 lidar_odometry_ros_wrapper_humble /bin/bash
+cd /data
+rosbags-convert --src reg-1.bag-pc.bag --dst reg-1-ros2 
 ```
 
-## Record the bag file:
+close terminal
+
+## Step 4 (run docker, file 'reg-1-ros2' should be in '~/hdmapping-benchmark/data')
+open new terminal
 
 ```shell
-ros2 bag record /odometry /feature_points -o {your_directory_for_the_recorded_bag}
+cd ~/hdmapping-benchmark/benchmark-lidar_odometry_ros_wrapper-to-HDMapping
+chmod +x docker_session_run-ros2-lidar_odometry_ros_wrapper.sh 
+cd ~/hdmapping-benchmark/data
+~/hdmapping-benchmark/benchmark-lidar_odometry_ros_wrapper-to-HDMapping/docker_session_run-ros2-lidar_odometry_ros_wrapper.sh reg-1-ros2 .
 ```
 
-## lidar_odometry_ros Launch:
+## Step 5 (Open and visualize data)
+Expected data should appear in ~/hdmapping-benchmark/data/output_hdmapping-lidar-odometry-ros
+Use tool [multi_view_tls_registration_step_2](https://github.com/MapsHD/HDMapping) to open session.json from ~/hdmapping-benchmark/data/output_hdmapping-lidar-odometry-ros.
 
-```shell
-cd /test_ws/
-source ./install/setup.sh # adjust to used shell
-ros2 launch lidar_odometry_ros lidar_odometry.launch.py config_file:=<config_path> use_sim_time:=true pointcloud_topic:=<topic>
-ros2 bag play {path_to_bag}
-```
+You should see following data
 
-## During the record (if you want to stop recording earlier) / after finishing the bag:
+lio_initial_poses.reg
 
-```shell
-In the terminal where the ros record is, interrupt the recording by CTRL+C
-Do it also in ros launch terminal by CTRL+C.
-```
+poses.reg
 
-## Usage - Conversion (ROS bag to HDMapping, after recording stops):
+scan_lio_*.laz
 
-```shell
-cd /test_ws/
-source ./install/setup.sh # adjust to used shell
-ros2 run lidar-odometry-ros-to-hdmapping <recorded_bag> <output_dir>
-```
+session.json
+
+trajectory_lio_*.csv
+
+## Movie
+[[movie]]()
+
+## Contact email
+januszbedkowski@gmail.com
