@@ -12,9 +12,9 @@ Run following commands in terminal
 ```shell
 mkdir -p ~/hdmapping-benchmark
 cd ~/hdmapping-benchmark
-git clone https://github.com/marcinmatecki/benchmark-lidar_odometry_ros_wrapper-to-HDMapping.git --recursive
+git clone https://github.com/MapsHD/benchmark-lidar_odometry_ros_wrapper-to-HDMapping.git --recursive
 cd benchmark-lidar_odometry_ros_wrapper-to-HDMapping
-git checkout mma/docker
+git checkout Bunker-DVI-Dataset-reg-1
 docker build -t lidar_odometry_ros_wrapper_humble .
 ```
 
